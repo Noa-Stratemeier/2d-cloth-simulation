@@ -5,3 +5,9 @@ html, body {
 #cloth-simulation {
     display: block;
 }
+
+#fps-counter {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+}
