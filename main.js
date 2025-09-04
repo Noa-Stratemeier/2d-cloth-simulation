@@ -51,10 +51,12 @@ class Point {
 
 
 class Constraint {
-    constructor(pointA, pointB, restLength) {
+    constructor(pointA, pointB, restLength, snapRatio = 3.0) {
         this.pointA = pointA;
         this.pointB = pointB;
         this.restLength = restLength;
+        this.snapRatio = snapRatio;
+        this.isBroken = false;
     }
 
     enforce() {
@@ -62,7 +64,8 @@ class Constraint {
         let dy = this.pointB.y - this.pointA.y;
 
         let currentLength = Math.hypot(dx, dy);
-        if (currentLength < this.restLength) return;  // Only correct stretching.
+        if (currentLength <= this.restLength) return;  // Only correct stretching.
+        if (currentLength / this.restLength >= this.snapRatio) { this.isBroken = true; return; }  // Handle constraint snapping.
 
         let relativeDifference = (this.restLength - currentLength) / currentLength;
 
@@ -128,8 +131,15 @@ class ClothSimulation {
     }
 
     enforceConstraints() {
-        for (let constraint of this.constraints) {
+        for (let i = this.constraints.length - 1; i >= 0; i--) {
+            let constraint = this.constraints[i];
             constraint.enforce();
+
+            // Swap-pop: replace the broken constraint with the last one, then pop the last.
+            if (constraint.isBroken) {
+                this.constraints[i] = this.constraints[this.constraints.length - 1];
+                this.constraints.pop();
+            }
         }
     }
 
