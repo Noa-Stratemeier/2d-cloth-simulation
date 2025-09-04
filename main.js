@@ -1,29 +1,5 @@
-class FPSCounter {
-    constructor(elementId) {
-        this.fpsElement = document.getElementById(elementId);
-        this.timeBefore = 0;
-        this.frameCount = 0;
-    }
-
-    tick() {
-        this.frameCount++;
-        let timeNow = performance.now();
-
-        if (timeNow - this.timeBefore >= 1000) {
-            this.fpsElement.textContent = this.frameCount;
-
-            this.timeBefore = timeNow;
-            this.frameCount = 0;
-        }
-    }
-}
-
-
-
-
-
 class Point {
-    constructor(x, y, isPinned = false, restitution = 0.8, velocityRetention = 0.999) {
+    constructor(x, y, isPinned = false, restitution = 0.5, velocityRetention = 0.99) {
         this.x = x;
         this.y = y;
         this.previousX = x;
@@ -31,14 +7,14 @@ class Point {
         this.isPinned = isPinned;
 
         this.restitution = restitution;
-        this.airResistance = velocityRetention;
+        this.velocityRetention = velocityRetention;
     }
 
     updatePosition(gravity, dt) {
         if (this.isPinned) return;
 
-        let xVelocity = (this.x - this.previousX) * this.airResistance;
-        let yVelocity = (this.y - this.previousY) * this.airResistance;
+        let xVelocity = (this.x - this.previousX) * this.velocityRetention;
+        let yVelocity = (this.y - this.previousY) * this.velocityRetention;
         this.previousX = this.x;
         this.previousY = this.y;
         this.x += xVelocity + gravity.x * dt * dt;
@@ -46,8 +22,10 @@ class Point {
     }
 
     handleBoundaryCollision(minX, maxX, minY, maxY) {
-        let xVelocity = (this.x - this.previousX) * this.airResistance;
-        let yVelocity = (this.y - this.previousY) * this.airResistance;
+        if (this.isPinned) return;
+
+        let xVelocity = this.x - this.previousX;
+        let yVelocity = this.y - this.previousY;
 
         if (this.x < minX) {
             this.x = minX;
@@ -73,12 +51,10 @@ class Point {
 
 
 class Constraint {
-    constructor(pointA, pointB, restLength, stiffness = 1.0) {
+    constructor(pointA, pointB, restLength) {
         this.pointA = pointA;
         this.pointB = pointB;
         this.restLength = restLength;
-
-        this.stiffness = stiffness;
     }
 
     enforce() {
@@ -86,18 +62,20 @@ class Constraint {
         let dy = this.pointB.y - this.pointA.y;
 
         let currentLength = Math.hypot(dx, dy);
-        if (currentLength === 0) { dx = 1e-6; dy = 0; currentLength = 1e-6; }
+        if (currentLength < this.restLength) return;  // Only correct stretching.
 
-        let lengthError = this.restLength - currentLength;
-        let relativeCorrection = (lengthError / currentLength) * this.stiffness;
+        let relativeDifference = (this.restLength - currentLength) / currentLength;
 
         let weightA = this.pointA.isPinned ? 0 : 1;
         let weightB = this.pointB.isPinned ? 0 : 1;
         let weightSum = weightA + weightB;
         if (weightSum === 0) return;
 
-        let correctionShareForPointA = relativeCorrection * (weightA / weightSum);
-        let correctionShareForPointB = relativeCorrection * (weightB / weightSum);
+        // The closer the current length gets to rest length the smaller the corrections get.
+        let damping = (1 - this.restLength / currentLength);  
+
+        let correctionShareForPointA = relativeDifference * (weightA / weightSum) * damping;
+        let correctionShareForPointB = relativeDifference * (weightB / weightSum) * damping;
 
         this.pointA.x -= dx * correctionShareForPointA;
         this.pointA.y -= dy * correctionShareForPointA;
@@ -122,6 +100,7 @@ class ClothSimulation {
     initialiseCloth(rows, columns, spacing, offsetX = 0, offsetY = 0, pinTopRow = true) {
         let rowColumnToIndex = (r, c) => r * columns + c;
 
+        // Initialise points in a rectangular grid of size rows * columns.
         for (let row = 0; row < rows; row++) {
             for (let column = 0; column < columns; column++) {
                 let x = column * spacing + offsetX;
@@ -160,10 +139,12 @@ class ClothSimulation {
         } 
     }
 
-    step(gravity, dt) {
+    step(gravity, dt, solverIterations) {
         this.updatePointPositions(gravity, dt);
-        this.enforceConstraints();
-        this.handleBoundaryCollisions();
+        for (let i = 0; i < solverIterations; i++) {
+            this.enforceConstraints();
+            this.handleBoundaryCollisions();
+        }
     }
 }
 
@@ -171,22 +152,39 @@ class ClothSimulation {
 
 
 
-let fpsCounter = new FPSCounter("fps-counter");
+let scene = {
+    gravity: {x: 0, y: 500},
+    dt: 0.016,
+    solverIterations: 8,
+
+    width: window.innerWidth,
+    height: window.innerHeight,
+
+    // Cloth.
+    rows: 40,
+    columns: 80,
+    spacing: 8,
+    xOffset: 100,
+    yOffset: 100
+}
 
 let canvas = document.getElementById("cloth-simulation");
 let context = canvas.getContext("2d");
-let width = canvas.width = window.innerWidth;
-let height = canvas.height = window.innerHeight;
+canvas.width = scene.width;
+canvas.height = scene.height;
 
-let clothSimulation = new ClothSimulation(width, height);
-clothSimulation.initialiseCloth(50, 50, 10, 100, 100);
-const gravity = {x: 0, y: 100};
-const dt = 0.0167;
+let clothSimulation = new ClothSimulation(scene.width, scene.height);
+clothSimulation.initialiseCloth(scene.rows, scene.columns, scene.spacing, scene.xOffset, scene.yOffset);
+
+
+
+
 
 function renderPoints() {
+    let pointSize = 0;
     for (let point of clothSimulation.points) {
         context.beginPath();
-        context.arc(point.x, point.y, 3, 0, Math.PI * 2);
+        context.arc(point.x, point.y, pointSize, 0, Math.PI * 2);
         context.fill();
     }
 }
@@ -200,16 +198,18 @@ function renderConstraints() {
     context.stroke();
 }
 
+
+
+
+
 function animate() {
-    fpsCounter.tick();
+    context.clearRect(0, 0, scene.width, scene.height);
 
-    clothSimulation.step(gravity, dt);
+    clothSimulation.step(scene.gravity, scene.dt, scene.solverIterations);
 
-    // Draw.
-    context.clearRect(0, 0, width, height);
-    renderPoints();
     renderConstraints();
-
+    renderPoints();
+    
     requestAnimationFrame(animate);
 }
 
@@ -222,7 +222,7 @@ animate();
 
 
 
-// --- cut constraints with the mouse ---
+// Cut constraints with the mouse.
 let cutting = false;
 let cuttingRadius = 5;
 const cut = e => {
