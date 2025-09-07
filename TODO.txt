@@ -1,0 +1,19 @@
+PRIORITY:
+- Add rebuild UI.
+
+
+GENERAL:
+- Test effect of enforcing compression constraints too.
+- Remove points from 'points' array that aren't connected to any constraints.
+
+
+CODE:
+- Maybe add a default for parameters, so the program doesn't crash if no parameters are given.
+
+
+PERFORMANCE:
+- Maybe pass dt**2 into update position (this way it's only computed once).
+
+
+NTH:
+- Let points have masses (defaulted to 1).

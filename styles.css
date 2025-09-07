@@ -5,3 +5,9 @@ html, body {
 #cloth-simulation {
     display: block;
 }
+
+#user-interface {
+    position: fixed;
+    top: 0;
+    right: 0;
+}
