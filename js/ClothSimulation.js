@@ -47,21 +47,30 @@ class Point {
 
 
 
+const ConstraintType = Object.freeze({
+    STRUCTURAL: "structural",
+    BEND: "bend",
+    SHEAR: "shear"
+});
+
 class Constraint {
-    constructor(pointA, pointB, restLength) {
+    constructor(pointA, pointB, restLength, type = ConstraintType.STRUCTURAL, hidden = false) {
         this.pointA = pointA;
         this.pointB = pointB;
         this.restLength = restLength;
+        this.type = type;
+        this.hidden = hidden;
         this.isBroken = false;
     }
 
-    enforce(snapRatio, correctionFactor) {
+    enforce(snapRatio, stiffness, correctCompression) {
         let dx = this.pointB.x - this.pointA.x;
         let dy = this.pointB.y - this.pointA.y;
 
         let currentLength = Math.hypot(dx, dy);
-        if (currentLength <= this.restLength) return;
+        if (currentLength <= this.restLength && !correctCompression) return;
         if (currentLength / this.restLength >= snapRatio) { this.isBroken = true; return; }
+        if (currentLength === 0.0) return;
 
         let relativeDifference = (this.restLength - currentLength) / currentLength;
 
@@ -70,8 +79,8 @@ class Constraint {
         let weightSum = weightA + weightB;
         if (weightSum === 0) return;
 
-        let correctionShareForPointA = relativeDifference * (weightA / weightSum) * correctionFactor;
-        let correctionShareForPointB = relativeDifference * (weightB / weightSum) * correctionFactor;
+        let correctionShareForPointA = relativeDifference * (weightA / weightSum) * stiffness;
+        let correctionShareForPointB = relativeDifference * (weightB / weightSum) * stiffness;
 
         this.pointA.x -= dx * correctionShareForPointA;
         this.pointA.y -= dy * correctionShareForPointA;
@@ -97,6 +106,7 @@ export default class ClothSimulation {
 
     initialiseCloth(clothRows, clothColumns, spacing, startX = 0, startY = 0, pinTopRow = true) {
         let rowColumnToIndex = (r, c) => r * clothColumns + c;
+        let sqrt2 = Math.sqrt(2);
 
         // Initialise points in a rectangular grid of size clothRows * clothColumns.
         for (let row = 0; row < clothRows; row++) {
@@ -107,13 +117,28 @@ export default class ClothSimulation {
                 let point = new Point(x, y, isPinned);
                 this.points.push(point);
 
-                // Connect to left neighbour.
+                // Structural constraints.
                 if (column > 0) {
                     this.constraints.push(new Constraint(point, this.points[rowColumnToIndex(row, column - 1)], spacing));
                 }
-                // Connect to top neighbour.
                 if (row > 0) {
                     this.constraints.push(new Constraint(point, this.points[rowColumnToIndex(row - 1, column)], spacing));
+                }
+
+                // Bend constraints.
+                if (row >= 2) {
+                    this.constraints.push(new Constraint(point, this.points[rowColumnToIndex(row - 2, column)], spacing * 2, ConstraintType.BEND, true));
+                }
+                if (column >= 2) {
+                    this.constraints.push(new Constraint(point, this.points[rowColumnToIndex(row, column - 2)], spacing * 2, ConstraintType.BEND, true));
+                }
+
+                // Shear constraints.
+                if (column > 0 && row > 0) {
+                    this.constraints.push(new Constraint(point, this.points[rowColumnToIndex(row - 1, column - 1)], sqrt2 * spacing, ConstraintType.SHEAR));
+                }
+                if (column < clothColumns - 1 && row > 0) {
+                    this.constraints.push(new Constraint(point, this.points[rowColumnToIndex(row - 1, column + 1)], sqrt2 * spacing, ConstraintType.SHEAR));
                 }
             }
         }
@@ -127,10 +152,26 @@ export default class ClothSimulation {
     }
 
     enforceConstraints() {
-        let { snapRatio, correctionFactor } = this.parameters;
+        let { snapRatio, structuralStiffness, bendStiffness, shearStiffness } = this.parameters;
         for (let i = this.constraints.length - 1; i >= 0; i--) {
             let constraint = this.constraints[i];
-            constraint.enforce(snapRatio, correctionFactor);
+            
+            let stiffness;
+            let correctCompression = false;
+
+            switch (constraint.type) {
+                case ConstraintType.BEND:
+                    stiffness = bendStiffness;
+                    correctCompression = true;
+                    break;
+                case ConstraintType.SHEAR:
+                    stiffness = shearStiffness;
+                    break;
+                default:  // ConstraintType.STRUCTURAL.
+                    stiffness = structuralStiffness;
+            }
+
+            constraint.enforce(snapRatio, stiffness, correctCompression);
 
             // Swap-pop: replace the broken constraint with the last one, then pop the last.
             if (constraint.isBroken) {

@@ -21,8 +21,10 @@ function renderPoints() {
 function renderConstraints() {
     context.beginPath();
     for (let constraint of scene.clothSimulation.constraints) {
-        context.moveTo(constraint.pointA.x, constraint.pointA.y);
-        context.lineTo(constraint.pointB.x, constraint.pointB.y)
+        if (!constraint.hidden) {
+            context.moveTo(constraint.pointA.x, constraint.pointA.y);
+            context.lineTo(constraint.pointB.x, constraint.pointB.y)
+        }
     }
     context.stroke();
 }
@@ -39,27 +41,3 @@ function animate() {
 }
 
 animate();
-
-
-
-
-
-
-
-
-// Cut constraints with the mouse.
-let cutting = false;
-let cuttingRadius = 5;
-const cut = e => {
-  if (!cutting && e.type !== 'pointerdown') return;
-  const x = e.offsetX, y = e.offsetY;
-  scene.clothSimulation.constraints = scene.clothSimulation.constraints.filter(c => {
-    let ax = c.pointA.x, ay = c.pointA.y, dx = c.pointB.x - ax, dy = c.pointB.y - ay;
-    let t = ((x - ax) * dx + (y - ay) * dy) / (dx*dx + dy*dy); t = t < 0 ? 0 : t > 1 ? 1 : t || 0;
-    let cx = ax + t * dx, cy = ay + t * dy;
-    return Math.hypot(x - cx, y - cy) > cuttingRadius;
-  });
-};
-canvas.addEventListener('pointerdown', e => { cutting = true; cut(e); });
-canvas.addEventListener('pointermove', cut);
-addEventListener('pointerup', () => cutting = false);

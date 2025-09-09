@@ -10,16 +10,18 @@ export let scene = {
         solverIterations: 8,
         // Constraints.
         snapRatio: 4.0,
-        correctionFactor: 0.8,
+        structuralStiffness: 1.0,
+        bendStiffness: 0.0,
+        shearStiffness: 1.0,
         // Points.
         restitution: 0.9,
         velocityRetention: 0.99
     }, 
 
-    // Cloth initialisation.
+    // Cloth initialisation parameters.
     clothRows: 30,
-    clothColumns: 80,
-    spacing: 8,
+    clothColumns: 60,
+    spacing: 10,
     startX: 100,
     startY: 100,
     
