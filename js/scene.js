@@ -2,6 +2,9 @@ export let scene = {
     width: window.innerWidth,
     height: window.innerHeight,
 
+    // Pointer parameters.
+    cuttingRadius: 10,
+
     // Cloth parameters.
     parameters: {
         // General.
@@ -24,6 +27,9 @@ export let scene = {
     spacing: 10,
     startX: 100,
     startY: 100,
-    
+
+    get clothWidth() { return (this.clothColumns - 1) * this.spacing; },
+    get clothHeight() { return (this.clothRows - 1) * this.spacing; },
+
     clothSimulation: null 
 }

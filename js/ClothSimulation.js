@@ -1,12 +1,31 @@
+/**
+* Point used by the cloth solver.
+*/
 class Point {
-    constructor(x, y, isPinned = false) {
+    /**
+     * @param {number} x - Initial x-position.
+     * @param {number} y - Initial y-position.
+     * @param {number} index - Index in the simulation's points array (maintained by `ClothSimulation`).
+     * @param {boolean} [isPinned=false] - If true, the point is immovable. 
+     */
+    constructor(x, y, index, isPinned = false) {
         this.x = x;
         this.y = y;
         this.previousX = x;
         this.previousY = y;
         this.isPinned = isPinned;
+
+        this.attachedConstraints = 0;
+        this.index = index;
     }
 
+    /**
+     * Update position using Verlet integration, no update occurs if the point is pinned.
+     * 
+     * @param {Vector2} gravity - Acceleration vector containing a `gravity.x` and `gravity.y` component.
+     * @param {number} dt - Time step in seconds.
+     * @param {number} velocityRetention - Velocity damping factor between [0, 1].
+     */
     updatePosition(gravity, dt, velocityRetention) {
         if (this.isPinned) return;
 
@@ -111,18 +130,19 @@ export default class ClothSimulation {
         // Initialise points in a rectangular grid of size clothRows * clothColumns.
         for (let row = 0; row < clothRows; row++) {
             for (let column = 0; column < clothColumns; column++) {
+                let i = rowColumnToIndex(row, column);
                 let x = column * spacing + startX;
                 let y = row * spacing + startY;
                 let isPinned = pinTopRow && row === 0;
-                let point = new Point(x, y, isPinned);
+                let point = new Point(x, y, i, isPinned);
                 this.points.push(point);
 
                 // Structural constraints.
                 if (column > 0) {
-                    this.constraints.push(new Constraint(point, this.points[rowColumnToIndex(row, column - 1)], spacing));
+                    this.constraints.push(new Constraint(point, this.points[rowColumnToIndex(row, column - 1)], spacing, ConstraintType.STRUCTURAL));
                 }
                 if (row > 0) {
-                    this.constraints.push(new Constraint(point, this.points[rowColumnToIndex(row - 1, column)], spacing));
+                    this.constraints.push(new Constraint(point, this.points[rowColumnToIndex(row - 1, column)], spacing, ConstraintType.STRUCTURAL));
                 }
 
                 // Bend constraints.
@@ -142,6 +162,11 @@ export default class ClothSimulation {
                 }
             }
         }
+
+        for (let constraint of this.constraints) { 
+            constraint.pointA.attachedConstraints++; 
+            constraint.pointB.attachedConstraints++; 
+        }
     }
 
     updatePointPositions() {
@@ -158,7 +183,6 @@ export default class ClothSimulation {
             
             let stiffness;
             let correctCompression = false;
-
             switch (constraint.type) {
                 case ConstraintType.BEND:
                     stiffness = bendStiffness;
@@ -173,8 +197,12 @@ export default class ClothSimulation {
 
             constraint.enforce(snapRatio, stiffness, correctCompression);
 
-            // Swap-pop: replace the broken constraint with the last one, then pop the last.
             if (constraint.isBroken) {
+                // Remove any points that no longer have constraints attached to them.
+                if (--constraint.pointA.attachedConstraints === 0) this.removePoint(constraint.pointA);
+                if (--constraint.pointB.attachedConstraints === 0) this.removePoint(constraint.pointB);
+
+                // Swap-pop: remove the broken constraint.
                 this.constraints[i] = this.constraints[this.constraints.length - 1];
                 this.constraints.pop();
             }
@@ -195,5 +223,21 @@ export default class ClothSimulation {
             this.enforceConstraints();
             this.handleBoundaryCollisions();
         }
+    }
+
+    // -----------------------------------------------------------------------------
+    // Helper Functions.
+    // -----------------------------------------------------------------------------
+
+    removePoint(point) {
+        let i = point.index;
+        let iLast = this.points.length - 1;
+
+        if (i !== iLast) {
+            let q = this.points[iLast];
+            this.points[i] = q;
+            q.index = i;
+        }
+        this.points.pop();
     }
 }

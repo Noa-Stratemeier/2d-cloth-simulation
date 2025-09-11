@@ -10,7 +10,7 @@ scene.clothSimulation = new ClothSimulation(scene.width, scene.height, scene.par
 scene.clothSimulation.initialiseCloth(scene.clothRows, scene.clothColumns, scene.spacing, scene.startX, scene.startY);
 
 function renderPoints() {
-    let pointSize = 0;
+    let pointSize = 2;
     for (let point of scene.clothSimulation.points) {
         context.beginPath();
         context.arc(point.x, point.y, pointSize, 0, Math.PI * 2);

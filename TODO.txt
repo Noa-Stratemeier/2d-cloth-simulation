@@ -1,6 +1,5 @@
 PRIORITY:
-- Make slicing mark constraints with broken.
-- Remove points from 'points' array that aren't connected to any constraints.
+- 
 
 
 GENERAL:
