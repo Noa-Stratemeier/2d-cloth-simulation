@@ -1,11 +1,45 @@
-/**
-* Point used by the cloth solver.
-*/
+class CircleObstacle {
+    constructor(x, y, radius, restitution) {
+        this.x = x;
+        this.y = y;
+        this.radius = radius;
+        this.restitution = restitution;
+    }
+
+    collidePoint(point) {
+        if (point.isPinned) return;
+
+        let dx = point.x - this.x;
+        let dy = point.y - this.y;
+        let d = Math.hypot(dx, dy);
+
+        if (d >= this.radius || d === 0) return;
+
+        // Outward normal vector.
+        let nx = dx / d;
+        let ny = dy / d;
+
+        // Project point to the surface of the circle.
+        point.x = this.x + nx * this.radius;
+        point.y = this.y + ny * this.radius;
+
+        // Reflect normal component of velocity.
+        let vx = point.x - point.previousX;
+        let vy = point.y - point.previousY;
+        let vn = vx * nx + vy * ny;
+        vx -= (1 + this.restitution) * vn * nx;
+        vy -= (1 + this.restitution) * vn * ny;
+
+        point.previousX = point.x - vx;
+        point.previousY = point.y - vy;
+    }
+}
+
 class Point {
     /**
      * @param {number} x - Initial x-position.
      * @param {number} y - Initial y-position.
-     * @param {number} index - Index in the simulation's points array (maintained by `ClothSimulation`).
+     * @param {number} index - Index in the simulation's `points` array (maintained by `ClothSimulation`).
      * @param {boolean} [isPinned=false] - If true, the point is immovable. 
      */
     constructor(x, y, index, isPinned = false) {
@@ -14,17 +48,16 @@ class Point {
         this.previousX = x;
         this.previousY = y;
         this.isPinned = isPinned;
-
         this.attachedConstraints = 0;
         this.index = index;
     }
 
     /**
-     * Update position using Verlet integration, no update occurs if the point is pinned.
+     * Update position using Verlet integration. No update if pinned.
      * 
      * @param {Vector2} gravity - Acceleration vector containing a `gravity.x` and `gravity.y` component.
      * @param {number} dt - Time step in seconds.
-     * @param {number} velocityRetention - Velocity damping factor between [0, 1].
+     * @param {number} velocityRetention - Velocity damping factor in [0, 1].
      */
     updatePosition(gravity, dt, velocityRetention) {
         if (this.isPinned) return;
@@ -37,6 +70,15 @@ class Point {
         this.y += yVelocity + gravity.y * dt * dt;
     }
 
+    /**
+     * Clamp position to the given bounds and reflect velocity. No update if pinned.
+     * 
+     * @param {number} minX - Left bound.
+     * @param {number} maxX - Right bound.
+     * @param {number} minY - Top bound.
+     * @param {number} maxY - Bottom bound.
+     * @param {number} restitution - Bounce damping factor in [0, 1].
+     */
     handleBoundaryCollision(minX, maxX, minY, maxY, restitution) {
         if (this.isPinned) return;
 
@@ -73,6 +115,13 @@ const ConstraintType = Object.freeze({
 });
 
 class Constraint {
+    /**
+     * @param {Point} pointA - First endpoint.
+     * @param {Point} pointB - Second endpoint.
+     * @param {number} restLength - Target distance between the points (pixels).
+     * @param {ConstraintType} [type=ConstraintType.STRUCTURAL] - Constraint kind.
+     * @param {boolean} [hidden=false] - If true, omit from rendering.
+     */
     constructor(pointA, pointB, restLength, type = ConstraintType.STRUCTURAL, hidden = false) {
         this.pointA = pointA;
         this.pointB = pointB;
@@ -116,10 +165,9 @@ export default class ClothSimulation {
     constructor(width, height, parameters) {
         this.points = [];
         this.constraints = [];
-
+        this.obstacles = [];
         this.width = width;
         this.height = height;
-
         this.parameters = parameters;
     }
 
@@ -169,6 +217,10 @@ export default class ClothSimulation {
         }
     }
 
+    addCircleObstacle(x, y, radius, restitution=this.parameters.restitution) {
+        this.obstacles.push(new CircleObstacle(x, y, radius, restitution));
+    }
+
     updatePointPositions() {
         let { gravity, dt, velocityRetention } = this.parameters;
         for (let point of this.points) {
@@ -202,7 +254,7 @@ export default class ClothSimulation {
                 if (--constraint.pointA.attachedConstraints === 0) this.removePoint(constraint.pointA);
                 if (--constraint.pointB.attachedConstraints === 0) this.removePoint(constraint.pointB);
 
-                // Swap-pop: remove the broken constraint.
+                // Remove the broken constraint.
                 this.constraints[i] = this.constraints[this.constraints.length - 1];
                 this.constraints.pop();
             }
@@ -216,11 +268,20 @@ export default class ClothSimulation {
         } 
     }
 
+    handleObstacleCollisions() {
+        for (let obstacle of this.obstacles) {
+            for (let point of this.points) {
+                obstacle.collidePoint(point);
+            }
+        }
+    }
+
     step() {
         let { solverIterations } = this.parameters;
         this.updatePointPositions();
         for (let i = 0; i < solverIterations; i++) {
             this.enforceConstraints();
+            this.handleObstacleCollisions();
             this.handleBoundaryCollisions();
         }
     }
@@ -229,14 +290,19 @@ export default class ClothSimulation {
     // Helper Functions.
     // -----------------------------------------------------------------------------
 
+    /**
+     * Removes a point from `points` using swap-and-pop (order doesn't matter).
+     * 
+     * @param {Point} point 
+     */
     removePoint(point) {
         let i = point.index;
         let iLast = this.points.length - 1;
 
         if (i !== iLast) {
-            let q = this.points[iLast];
-            this.points[i] = q;
-            q.index = i;
+            let lastPoint = this.points[iLast];
+            this.points[i] = lastPoint;
+            lastPoint.index = i;
         }
         this.points.pop();
     }

@@ -22,8 +22,8 @@ let controls = [
     { label: "Velocity Retention",    min: 0.0,     max: 1.0,                               step: 0.05,    target: scene.parameters,          key: "velocityRetention" },  
                    
     { label: "Cloth Rows",            min: 2,       max: 120,                               step: 1,       target: scene,                     key: "clothRows",              rebuild: true},
-    { label: "Cloth Cols",            min: 2,       max: 160,                               step: 1,       target: scene,                     key: "clothColumns",           rebuild: true},
-    { label: "Spacing",               min: 0,       max: 30,                                step: 1,       target: scene,                     key: "spacing",                rebuild: true},
+    { label: "Cloth Columns",         min: 2,       max: 160,                               step: 1,       target: scene,                     key: "clothColumns",           rebuild: true},
+    { label: "Spacing",               min: 1,       max: 30,                                step: 1,       target: scene,                     key: "spacing",                rebuild: true},
     { label: "Start X",               min: 0,       max: scene.width - scene.clothWidth,    step: 1,       target: scene,                     key: "startX",                 rebuild: true},
     { label: "Start Y",               min: 0,       max: scene.height - scene.clothHeight,  step: 1,       target: scene,                     key: "startY",                 rebuild: true}  
 ];
@@ -64,17 +64,27 @@ controls.forEach((control, index) => {
 // Pointer Interaction.
 // -----------------------------------------------------------------------------
 
-// Cut constraints with the mouse.
-let cutting = false;
+let pointerDown = false;
+let obstacleIndex = 0;
+let tool = null;
 
-window.addEventListener('pointerdown', e => { cutting = true; cut(e); });
-window.addEventListener('pointermove', cut);
-addEventListener('pointerup', () => cutting = false);
+window.addEventListener("pointerdown", event => { 
+    pointerDown = true; 
+    tool = event.ctrlKey ? "move" : "cut"
+    handlePointerInteraction(event); 
+});
+addEventListener("pointerup", () => {
+    pointerDown = false; 
+    tool = null;
+});
+window.addEventListener("pointermove", handlePointerInteraction);
+
+function handlePointerInteraction(event) {
+    if (tool === "cut") cut(event);
+    if (tool === "move") moveObstacle(event);
+}
 
 function cut(event) {
-    if (!cutting) return;
-
-    // Pointer position.
     let x = event.clientX;
     let y = event.clientY;
 
@@ -84,16 +94,23 @@ function cut(event) {
 }
 
 function intersectsCutCircle(constraint, x, y) {
-    let ax = constraint.pointA.x;
-    let ay = constraint.pointA.y;
-
     let dx = constraint.pointB.x - constraint.pointA.x;
     let dy = constraint.pointB.y - constraint.pointA.y;
 
-    let t = ((x - ax) * dx + (y - ay) * dy) / (dx*dx + dy*dy); 
+    // Parametric coordinate of the nearest point on the constraint to the pointer coordinates (x, y). 
+    // Specifically, how far along the line segment from pointA to pointB the nearest point lies.
+    let t = ((x - constraint.pointA.x) * dx + (y - constraint.pointA.y) * dy) / (dx * dx + dy * dy); 
     t = t < 0 ? 0 : t > 1 ? 1 : t || 0;
-    let cx = ax + t * dx;
-    let cy = ay + t * dy;
+
+    let cx = constraint.pointA.x + t * dx;
+    let cy = constraint.pointA.y + t * dy;
     return Math.hypot(x - cx, y - cy) < scene.cuttingRadius;
 }
 
+function moveObstacle(event) {
+    let x = event.clientX;
+    let y = event.clientY;
+
+    scene.clothSimulation.obstacles[obstacleIndex].x = x;
+    scene.clothSimulation.obstacles[obstacleIndex].y = y;
+}

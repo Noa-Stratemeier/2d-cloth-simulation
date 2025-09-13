@@ -8,6 +8,7 @@ canvas.height = scene.height;
 
 scene.clothSimulation = new ClothSimulation(scene.width, scene.height, scene.parameters);
 scene.clothSimulation.initialiseCloth(scene.clothRows, scene.clothColumns, scene.spacing, scene.startX, scene.startY);
+scene.clothSimulation.addCircleObstacle(0, 0, 50, 1);
 
 function renderPoints() {
     let pointSize = 2;

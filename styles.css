@@ -4,6 +4,7 @@ html, body {
 
 #cloth-simulation {
     display: block;
+    touch-action: none;
 }
 
 #user-interface {
