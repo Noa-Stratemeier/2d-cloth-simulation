@@ -40,7 +40,7 @@ class Point {
      * @param {number} x - Initial x-position.
      * @param {number} y - Initial y-position.
      * @param {number} index - Index in the simulation's `points` array (maintained by `ClothSimulation`).
-     * @param {boolean} [isPinned=false] - If true, the point is immovable. 
+     * @param {boolean} isPinned - If true, the point is immovable. 
      */
     constructor(x, y, index, isPinned = false) {
         this.x = x;
@@ -119,8 +119,8 @@ class Constraint {
      * @param {Point} pointA - First endpoint.
      * @param {Point} pointB - Second endpoint.
      * @param {number} restLength - Target distance between the points (pixels).
-     * @param {ConstraintType} [type=ConstraintType.STRUCTURAL] - Constraint kind.
-     * @param {boolean} [hidden=false] - If true, omit from rendering.
+     * @param {ConstraintType} type - Constraint type.
+     * @param {boolean} hidden - If true, don't render this constraint.
      */
     constructor(pointA, pointB, restLength, type = ConstraintType.STRUCTURAL, hidden = false) {
         this.pointA = pointA;
@@ -291,19 +291,15 @@ export default class ClothSimulation {
     // -----------------------------------------------------------------------------
 
     /**
-     * Removes a point from `points` using swap-and-pop (order doesn't matter).
+     * Removes a point from `points` using swap-and-pop (order of `points` doesn't matter).
      * 
      * @param {Point} point 
      */
     removePoint(point) {
         let i = point.index;
-        let iLast = this.points.length - 1;
 
-        if (i !== iLast) {
-            let lastPoint = this.points[iLast];
-            this.points[i] = lastPoint;
-            lastPoint.index = i;
-        }
+        this.points[i] = this.points[this.points.length - 1];
+        this.points[i].index = i;
         this.points.pop();
     }
 }

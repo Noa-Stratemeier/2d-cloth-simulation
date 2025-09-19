@@ -8,7 +8,7 @@ let userInterface = document.getElementById("user-interface");
 
 // Label, range, a direct reference to the object + the property key, and whether a rebuild of the cloth should occur.
 let controls = [
-    { label: "Cutting Radius",        min: 0,       max: 500,                               step: 10,      target: scene,                     key: "cuttingRadius" },
+    { label: "Cutting Radius",        min: 0,       max: 100,                               step: 1,       target: scene,                     key: "cuttingRadius" },
     { label: "Gravity",               min: 0,       max: 2000,                              step: 100,     target: scene.parameters.gravity,  key: "y" },
     { label: "Time Step",             min: 0.0002,  max: 0.02,                              step: 0.0002,  target: scene.parameters,          key: "dt" },
     { label: "Iterations",            min: 1,       max: 50,                                step: 1,       target: scene.parameters,          key: "solverIterations" },
@@ -18,12 +18,12 @@ let controls = [
     { label: "Bend Stiffness",        min: 0.0,     max: 1.0,                               step: 0.001,   target: scene.parameters,          key: "bendStiffness" },  
     { label: "Shear Stiffness",       min: 0.0,     max: 1.0,                               step: 0.001,   target: scene.parameters,          key: "shearStiffness" },  
                    
-    { label: "Restitution",           min: 0.0,     max: 1.0,                               step: 0.05,    target: scene.parameters,          key: "restitution" },  
-    { label: "Velocity Retention",    min: 0.0,     max: 1.0,                               step: 0.05,    target: scene.parameters,          key: "velocityRetention" },  
+    { label: "Restitution",           min: 0.0,     max: 1.0,                               step: 0.01,    target: scene.parameters,          key: "restitution" },  
+    { label: "Velocity Retention",    min: 0.0,     max: 1.0,                               step: 0.01,    target: scene.parameters,          key: "velocityRetention" },  
                    
     { label: "Cloth Rows",            min: 2,       max: 120,                               step: 1,       target: scene,                     key: "clothRows",              rebuild: true},
     { label: "Cloth Columns",         min: 2,       max: 160,                               step: 1,       target: scene,                     key: "clothColumns",           rebuild: true},
-    { label: "Spacing",               min: 1,       max: 30,                                step: 1,       target: scene,                     key: "spacing",                rebuild: true},
+    { label: "Spacing",               min: 5,       max: 50,                                step: 1,       target: scene,                     key: "spacing",                rebuild: true},
     { label: "Start X",               min: 0,       max: scene.width - scene.clothWidth,    step: 1,       target: scene,                     key: "startX",                 rebuild: true},
     { label: "Start Y",               min: 0,       max: scene.height - scene.clothHeight,  step: 1,       target: scene,                     key: "startY",                 rebuild: true}  
 ];

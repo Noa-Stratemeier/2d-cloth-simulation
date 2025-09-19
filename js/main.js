@@ -8,7 +8,7 @@ canvas.height = scene.height;
 
 scene.clothSimulation = new ClothSimulation(scene.width, scene.height, scene.parameters);
 scene.clothSimulation.initialiseCloth(scene.clothRows, scene.clothColumns, scene.spacing, scene.startX, scene.startY);
-scene.clothSimulation.addCircleObstacle(0, 0, 50, 1);
+scene.clothSimulation.addCircleObstacle(300, 600, 50, 1);
 
 function renderPoints() {
     let pointSize = 2;
@@ -30,6 +30,14 @@ function renderConstraints() {
     context.stroke();
 }
 
+function renderObstacles() {
+    for (let obstacle of scene.clothSimulation.obstacles) {
+        context.beginPath();
+        context.arc(obstacle.x, obstacle.y, obstacle.radius, 0, Math.PI * 2);
+        context.stroke();
+    }
+}
+
 function animate() {
     context.clearRect(0, 0, scene.width, scene.height);
 
@@ -37,6 +45,7 @@ function animate() {
 
     renderConstraints();
     renderPoints();
+    renderObstacles();
     
     requestAnimationFrame(animate);
 }
