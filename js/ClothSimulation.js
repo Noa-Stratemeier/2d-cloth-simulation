@@ -202,6 +202,10 @@ export default class ClothSimulation {
    * @param {boolean} pinTopRow - If true, pin all points in the first row.
    */
   initialiseCloth(clothRows, clothColumns, spacing, startX = 0, startY = 0, pinTopRow = true) {
+    // Reset cloth.
+    this.points.length = 0;
+    this.constraints.length = 0;
+
     let sqrt2 = Math.sqrt(2);
     let index = (r, c) => r * clothColumns + c;
 

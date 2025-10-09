@@ -1,13 +1,20 @@
 import ClothSimulation from "./ClothSimulation.js";
 import { scene } from "./scene.js";
+import "./userInterface.js";
+import "./userInteraction.js";
+import Stats from "https://esm.sh/stats.js@0.17.0";
+
+let stats = new Stats();
+stats.showPanel(0);
+document.body.appendChild(stats.dom);
 
 let canvas = document.getElementById("cloth-simulation");
 let context = canvas.getContext("2d");
 canvas.width = scene.width;
 canvas.height = scene.height;
 
-scene.clothSimulation = new ClothSimulation(scene.width, scene.height, scene.parameters);
-scene.clothSimulation.initialiseCloth(scene.clothRows, scene.clothColumns, scene.spacing, scene.startX, scene.startY);
+scene.clothSimulation = new ClothSimulation(scene.width, scene.height, scene.simulation);
+scene.clothSimulation.initialiseCloth(scene.cloth.rows, scene.cloth.columns, scene.cloth.spacing, scene.cloth.startX, scene.cloth.startY);
 scene.clothSimulation.addCircleObstacle(300, 600, 50, 1);
 
 function renderPoints() {
@@ -38,7 +45,12 @@ function renderObstacles() {
   }
 }
 
+// Set drawing styles.
+context.fillStyle = "#228B22";
+context.strokeStyle = "#228B22";
+
 function animate() {
+  stats.begin();
   context.clearRect(0, 0, scene.width, scene.height);
 
   scene.clothSimulation.step();
@@ -47,6 +59,7 @@ function animate() {
   renderPoints();
   renderObstacles();
 
+  stats.end();
   requestAnimationFrame(animate);
 }
 
