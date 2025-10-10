@@ -9,8 +9,11 @@ body {
   background: #131313;
 }
 
-#user-interface {
+#control-annotations {
   position: fixed;
-  top: 0;
-  right: 0;
+  bottom: 0;
+  left: 0;
+  padding: 1rem;
+  color: rgb(228, 228, 228);
+  font-family: Arial;
 }

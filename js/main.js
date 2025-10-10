@@ -15,10 +15,10 @@ canvas.height = scene.height;
 
 scene.clothSimulation = new ClothSimulation(scene.width, scene.height, scene.simulation);
 scene.clothSimulation.initialiseCloth(scene.cloth.rows, scene.cloth.columns, scene.cloth.spacing, scene.cloth.startX, scene.cloth.startY);
-scene.clothSimulation.addCircleObstacle(300, 600, 50, 1);
+scene.clothSimulation.addCircleObstacle(scene.obstacle.x, scene.obstacle.y, scene.obstacle.radius, scene.obstacle.restitution);
 
 function renderPoints() {
-  let pointSize = 2;
+  let pointSize = 0.2 * scene.cloth.spacing;
   for (let point of scene.clothSimulation.points) {
     context.beginPath();
     context.arc(point.x, point.y, pointSize, 0, Math.PI * 2);
@@ -37,12 +37,11 @@ function renderConstraints() {
   context.stroke();
 }
 
-function renderObstacles() {
-  for (let obstacle of scene.clothSimulation.obstacles) {
-    context.beginPath();
-    context.arc(obstacle.x, obstacle.y, obstacle.radius, 0, Math.PI * 2);
-    context.stroke();
-  }
+function renderObstacle() {
+  let obstacle = scene.clothSimulation.obstacle;
+  context.beginPath();
+  context.arc(obstacle.x, obstacle.y, obstacle.radius, 0, Math.PI * 2);
+  context.stroke();
 }
 
 // Set drawing styles.
@@ -57,7 +56,7 @@ function animate() {
 
   renderConstraints();
   renderPoints();
-  renderObstacles();
+  renderObstacle();
 
   stats.end();
   requestAnimationFrame(animate);

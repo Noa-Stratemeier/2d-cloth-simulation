@@ -7,11 +7,19 @@ let clothFolder = gui.addFolder("Cloth");
 
 // Object reference, property key, min, max, step.
 gui.add(scene, "cuttingRadius", 1, 100, 1).name("Cutting Radius");
+gui
+  .add(scene.obstacle, "radius", 10, 500, 1)
+  .name("Obstacle Radius")
+  .onChange(() => {
+    let obstacle = scene.clothSimulation.obstacle;
+    if (obstacle) obstacle.radius = scene.obstacle.radius;
+  });
 
-simulationFolder.add(scene.simulation.gravity, "y", 0, 2000, 100).name("Gravity");
-simulationFolder.add(scene.simulation, "dt", 0.0002, 0.02, 0.0001).name("Time Step");
+gui.add({ rebuild }, "rebuild").name("Reset");
+
+simulationFolder.add(scene.simulation.gravity, "y", 0, 5000, 100).name("Gravity");
 simulationFolder.add(scene.simulation, "solverIterations", 1, 50, 1).name("Solver Iterations");
-simulationFolder.add(scene.simulation, "snapRatio", 2, 50.0, 1).name("Snap Ratio");
+simulationFolder.add(scene.simulation, "snapRatio", 2, 50, 1).name("Snap Ratio");
 simulationFolder.add(scene.simulation, "structuralStiffness", 0.001, 1.0, 0.001).name("Structural Stiffness");
 simulationFolder.add(scene.simulation, "bendStiffness", 0.0, 1.0, 0.001).name("Bend Stiffness");
 simulationFolder.add(scene.simulation, "shearStiffness", 0.0, 1.0, 0.001).name("Shear Stiffness");

@@ -1,6 +1,5 @@
 import { scene } from "./scene.js";
 
-let obstacleIndex = 0;
 let tool = null;
 
 window.addEventListener("pointerdown", (event) => {
@@ -44,6 +43,6 @@ function moveObstacle(event) {
   let x = event.clientX;
   let y = event.clientY;
 
-  scene.clothSimulation.obstacles[obstacleIndex].x = x;
-  scene.clothSimulation.obstacles[obstacleIndex].y = y;
+  scene.clothSimulation.obstacle.x = x;
+  scene.clothSimulation.obstacle.y = y;
 }

@@ -19,16 +19,10 @@ export let scene = {
   cloth: {
     rows: 30,
     columns: 60,
-    spacing: 10,
-    startX: 100,
-    startY: 100,
+    spacing: 12,
+    startX: 0,
+    startY: 0,
 
-    get width() {
-      return (this.columns - 1) * this.spacing;
-    },
-    get height() {
-      return (this.rows - 1) * this.spacing;
-    },
     get maxRows() {
       return Math.floor((scene.height - this.startY) / this.spacing) + 1;
     },
@@ -41,12 +35,30 @@ export let scene = {
       return Math.floor(Math.min(maxSpacingX, maxSpacingY));
     },
     get maxStartX() {
-      return scene.width - this.width;
+      let clothWidth = (this.columns - 1) * this.spacing;
+      return scene.width - clothWidth;
     },
     get maxStartY() {
-      return scene.height - this.height;
+      let clothHeight = (this.rows - 1) * this.spacing;
+      return scene.height - clothHeight;
     },
+  },
+
+  obstacle: {
+    x: 0,
+    y: 0,
+    radius: 50,
+    restitution: 1.0,
   },
 
   clothSimulation: null,
 };
+
+// Fit the cloth to the screen size.
+scene.cloth.spacing = Math.min(scene.cloth.spacing, scene.cloth.maxSpacing);
+scene.cloth.startX = Math.floor(scene.cloth.maxStartX * 0.5); // Centre cloth horizontally.
+scene.cloth.startY = Math.floor(scene.cloth.maxStartY * 0.25); // Position cloth one-quarter down canvas from top.
+
+// Position the obstacle.
+scene.obstacle.x = Math.floor(scene.width * 0.5);
+scene.obstacle.y = Math.floor(scene.height * 0.75);

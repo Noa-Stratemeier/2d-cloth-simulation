@@ -185,7 +185,7 @@ export default class ClothSimulation {
   constructor(width, height, parameters) {
     this.points = [];
     this.constraints = [];
-    this.obstacles = [];
+    this.obstacle = null;
     this.width = width;
     this.height = height;
     this.parameters = parameters;
@@ -265,8 +265,8 @@ export default class ClothSimulation {
     this.constraints.push(new Constraint(pointA, pointB, restLength, type, hidden));
   }
 
-  addCircleObstacle(x, y, radius, restitution = this.parameters.restitution) {
-    this.obstacles.push(new CircleObstacle(x, y, radius, restitution));
+  addCircleObstacle(x, y, radius, restitution) {
+    this.obstacle = new CircleObstacle(x, y, radius, restitution);
   }
 
   updatePointPositions() {
@@ -309,18 +309,12 @@ export default class ClothSimulation {
     }
   }
 
-  handleBoundaryCollisions() {
+  handleCollisions() {
     let { restitution } = this.parameters;
     for (let point of this.points) {
       point.handleBoundaryCollision(0, this.width, 0, this.height, restitution);
-    }
-  }
 
-  handleObstacleCollisions() {
-    for (let obstacle of this.obstacles) {
-      for (let point of this.points) {
-        obstacle.collidePoint(point);
-      }
+      if (this.obstacle) this.obstacle.collidePoint(point);
     }
   }
 
@@ -329,8 +323,7 @@ export default class ClothSimulation {
     this.updatePointPositions();
     for (let i = 0; i < solverIterations; i++) {
       this.enforceConstraints();
-      this.handleObstacleCollisions();
-      this.handleBoundaryCollisions();
+      this.handleCollisions();
     }
   }
 
