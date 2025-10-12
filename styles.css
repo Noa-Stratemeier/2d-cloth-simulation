@@ -6,7 +6,7 @@ body {
 #cloth-simulation {
   display: block;
   touch-action: none;
-  background: #131313;
+  background: #181818;
 }
 
 #control-annotations {
@@ -16,4 +16,9 @@ body {
   padding: 1rem;
   color: rgb(228, 228, 228);
   font-family: Arial;
+  font-size: small;
+}
+
+#control-annotations p {
+  margin: 0;
 }

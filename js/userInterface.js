@@ -32,6 +32,8 @@ let clothSpacing = clothFolder.add(scene.cloth, "spacing", 5, scene.cloth.maxSpa
 let clothStartX = clothFolder.add(scene.cloth, "startX", 0, scene.cloth.maxStartX, 1).name("Start X").onChange(rebuild);
 let clothStartY = clothFolder.add(scene.cloth, "startY", 0, scene.cloth.maxStartY, 1).name("Start Y").onChange(rebuild);
 
+gui.close();
+
 function rebuild() {
   scene.clothSimulation.initialiseCloth(scene.cloth.rows, scene.cloth.columns, scene.cloth.spacing, scene.cloth.startX, scene.cloth.startY);
   updateControlLimits();

@@ -3,7 +3,11 @@ import { scene } from "./scene.js";
 let tool = null;
 
 window.addEventListener("pointerdown", (event) => {
-  tool = event.ctrlKey ? "move" : "cut";
+  let obstacle = scene.clothSimulation.obstacle;
+  let dx = obstacle.x - event.clientX;
+  let dy = obstacle.y - event.clientY;
+  let distance = Math.hypot(dx, dy);
+  tool = distance <= obstacle.radius ? "move" : "cut";
   handlePointerInteraction(event);
 });
 addEventListener("pointerup", () => {
@@ -17,11 +21,8 @@ function handlePointerInteraction(event) {
 }
 
 function cut(event) {
-  let x = event.clientX;
-  let y = event.clientY;
-
   for (let constraint of scene.clothSimulation.constraints) {
-    if (intersectsCutCircle(constraint, x, y)) constraint.isBroken = true;
+    if (intersectsCutCircle(constraint, event.clientX, event.clientY)) constraint.isBroken = true;
   }
 }
 
@@ -40,9 +41,6 @@ function intersectsCutCircle(constraint, x, y) {
 }
 
 function moveObstacle(event) {
-  let x = event.clientX;
-  let y = event.clientY;
-
-  scene.clothSimulation.obstacle.x = x;
-  scene.clothSimulation.obstacle.y = y;
+  scene.clothSimulation.obstacle.x = event.clientX;
+  scene.clothSimulation.obstacle.y = event.clientY;
 }
